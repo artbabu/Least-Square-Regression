@@ -26,7 +26,7 @@ def standardize(s_df):
 
         #         mean of interaction terms of two discrete variable are zero. those columns are
         #         filtered while standizing as it cause singular matrix
-        if (col_mean != 0 or col_std != 0) or col not in dummy_feature_List:
+        if (col_mean != 0 and col_std != 0) or col not in dummy_feature_List:
             s_df[col] = s_df[col].apply(lambda x: (x - col_mean) / float(col_std))
 
     return s_df
@@ -36,6 +36,10 @@ def preprocessing(x_df):
     x_df = pd.get_dummies(x_df, prefix=['country_group', 'Position'], columns=['country_group', 'Position'])
     x_df = x_df.apply(pd.to_numeric, args=('coerce',))
 
+    #         #     standardization
+    x_df = standardize(x_df)
+    #     y_df = standardize(y_df)
+
     # # # adding interaction terms
     for col_1, col_2 in combinations(x_df.columns, 2):
         cond1 = col_1 not in dummy_feature_List
@@ -43,10 +47,6 @@ def preprocessing(x_df):
         if cond1 or cond2:
             x_df['{}*{}'.format(col_1, col_2)] = np.multiply(x_df[col_1], x_df[col_2])
             # x_df.to_csv('ex.csv', sep='\t')
-
-    #         #     standardization
-    x_df = standardize(x_df)
-    #     y_df = standardize(y_df)
 
     #     deleteing column = 0
     x_df = x_df.loc[:, (x_df != 0).any(axis=0)]
@@ -120,11 +120,12 @@ def load_dataset():
 
     return (x_train, y_train), (x_test, y_test)
 
-max_iter = 4
+max_iter =
 tol = 0.00001
 
 # Step size for gradient descent.
 etas = [0.5, 0.3, 0.1, 0.05, 0.01, 0.001]
+# etas = [0.1, 0.01, 0.001]
 # etas = [0.1, 0.05, 0.01]
 
 (X, t), (X_test, t_test) = load_dataset()
@@ -142,7 +143,7 @@ all_errors = dict()
 
 for eta in etas:
     # Initialize w.
-    w = np.array([0.1] + feature_size * [0.0], dtype=np.float32)
+    w = np.array([0.01] + feature_size * [0.0], dtype=np.float32)
     e_all = []
 
     for iter in range(0, max_iter):
@@ -158,17 +159,17 @@ for eta in etas:
             # print grad_e
         # Compute error over all examples, add this error to the end of error vector.
         # Compute output using current w on all data X.
-        y = sps.expit(np.dot(X, w))
+        y = sps.expit(np.dot(X_test, w))
 
         # e is the error, negative log-likelihood (Eqn 4.90)
         # e = calculate_negative_log_likelihood(t,w,X)
         # e = - np.mean(np.dot(np.log(y + 1E-08),t) + np.dot(np.log(1 - y + 1E-08),(1 - t)))
-        e = -np.mean(np.multiply(t, np.log(y + 1E-08)) + np.multiply((1 - t), np.log(1 - y + 1E-08)))
+        e = -np.mean(np.multiply(t_test, np.log(y + 1E-08)) + np.multiply((1 - t_test), np.log(1 - y + 1E-08)))
         e_all.append(e)
 
         # Print some information.
         # print 'eta={0}, epoch {1:d}, negative log-likelihood {2:.4f}, w={3}'.format(eta, iter, e, w.T)
-        # print 'eta={0}, epoch {1:d}, negative log-likelihood {2:.4f}'.format(eta, iter, e)
+        print 'eta={0}, epoch {1:d}, negative log-likelihood {2:.4f}'.format(eta, iter, e)
 
         # Stop iterating if error doesn't change more than tol.
         if iter > 0:
