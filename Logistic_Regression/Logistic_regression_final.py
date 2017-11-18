@@ -8,6 +8,7 @@ from numpy.linalg import inv
 from collections import defaultdict
 import math
 import time
+from sklearn.metrics import log_loss
 
 dummy_feature_List = ['country_group_CAN','country_group_EURO', 'country_group_USA', 'Position_C',
        'Position_D', 'Position_L', 'Position_R']
@@ -39,11 +40,11 @@ def calculate_accuracy(target, weights, features):
     return (total_match / float(total_count)) * 100
 
 def load_dataset():
-    df = pd.read_csv("../Model_Trees_Full_Dataset/normalized_datasets.csv")
-    # df = pd.read_csv("../Model_Trees_Full_Dataset/preprocessed_datasets.csv")
+    # df = pd.read_csv("../Model_Trees_Full_Dataset/normalized_datasets.csv")
+    df = pd.read_csv("../Model_Trees_Full_Dataset/preprocessed_datasets.csv")
     df = df.iloc[np.random.permutation(len(df))]
-    # drop_columns = [u'id', u'PlayerName', u'sum_7yr_TOI', u'DraftYear',u'Country', u'Overall', u'sum_7yr_GP']
-    drop_columns = [u'id', u'PlayerName', u'sum_7yr_TOI', u'DraftYear', u'Overall', u'sum_7yr_GP']
+    drop_columns = [u'id', u'PlayerName', u'sum_7yr_TOI', u'DraftYear',u'Country', u'Overall', u'sum_7yr_GP']
+    # drop_columns = [u'id', u'PlayerName', u'sum_7yr_TOI', u'DraftYear', u'Overall', u'sum_7yr_GP']
     x_df = pd.get_dummies(df, prefix=['country_group', 'Position'], columns=['country_group', 'Position'])
     training_df = x_df[x_df[u'DraftYear'].isin([2004, 2005, 2006])]
     testing_df = x_df[x_df[u'DraftYear'] == 2007]
@@ -60,8 +61,8 @@ def load_dataset():
     y_test_df = y_test_df.replace(['yes', 'no'], [1, 0])
     x_test_df = dropped_test.drop([u'GP_greater_than_0'], axis=1)
 
-    # x_train_df = standardize(x_train_df)
-    # x_test_df = standardize(x_test_df)
+    x_train_df = standardize(x_train_df)
+    x_test_df = standardize(x_test_df)
 
     y_train = y_train_df.values
     x_train = x_train_df.values
@@ -109,10 +110,10 @@ for eta in etas:
         # x_train, y_train = unison_shuffled_copies(x_train, y_train)
         for n in range(0, n_train):
             # Compute output using current w on sample x_n.
-            y = sps.expit(np.dot(x_train[n, :], w))
+            y_n = sps.expit(np.dot(x_train[n, :], w))
 
             # Gradient of the error, using Assignment result
-            grad_e = (y - y_train[n]) * x_train[n, :]
+            grad_e = (y_n - y_train[n]) * x_train[n, :]
 
             # Update w, *subtracting* a step in the error derivative since we're minimizing
             # w = fill this in
@@ -124,7 +125,8 @@ for eta in etas:
 
         # e is the error, negative log-likelihood (Eqn 4.90)
         #         e = log_likelihood(y_train, w, x_train)
-        e = log_likelihood(y_train, w, x_train,y)
+        # e = log_likelihood(y_train, w, x_train,y)
+        e = log_loss(y_true=y_train, y_pred=y)
         # e = - np.mean(np.multiply(y_train, np.log(y + 1E-08)) + np.multiply((1 - y_train), np.log(1 - y + 1E-08)))
         #         e = -np.mean(np.multiply(y_train,np.log(y)) + np.multiply((1-y_train),np.log(1-y)))
         e_all.append(e)
@@ -140,6 +142,7 @@ for eta in etas:
 
     all_errors[eta] = e_all
     print "Final Accuracy ==> ", calculate_accuracy(y_test, w, x_test)
+    del w
 
 # Plot error over iterations for all etas
 plt.figure(10)
