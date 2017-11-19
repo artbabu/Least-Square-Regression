@@ -19,8 +19,16 @@ def standardize(s_df):
 
         #         mean of interaction terms of two discrete variable are zero. those columns are
         #         filtered while standizing as it cause singular matrix
-        if (col_mean != 0 or col_std != 0) or col not in dummy_feature_List :
-            s_df[col] = s_df[col].apply(lambda x: (x - col_mean) / float(col_std))
+        # if (col_std != 0) and col not in dummy_feature_List :
+        #     s_df[col] = (s_df[col] - col_mean)
+        #     s_df[col] = s_df / float(col_std)
+
+        # standardize data to the same range, i.e. x := x - min(x)/(max(x) - min(x)),
+        if (col_std != 0) and col not in dummy_feature_List:
+            min = s_df[col].min()
+            max = s_df[col].max()
+            s_df[col] = (s_df[col] - min )
+            s_df[col] = s_df / float(max - min)
 
     return s_df
 
@@ -86,7 +94,7 @@ max_iter = 1000
 tol = 0.00001
 
 # Step size for gradient descent.
-etas = [0.5, 0.3, 0.1, 0.05, 0.01]
+etas = [0.5, 0.3, 0.1, 0.05, 0.01, 0.001]
 # etas = [0.1, 0.001, 0.01,0.0001,0.05]
 #etas = [0.1, 0.05, 0.01]
 
@@ -105,6 +113,7 @@ for eta in etas:
     # Initialize w.
     w = np.array([0.1] + feature_size * [0.0], dtype=np.float32)
     e_all = []
+    acc = {}
 
     for iter in range(0, max_iter):
         # x_train, y_train = unison_shuffled_copies(x_train, y_train)
@@ -121,13 +130,13 @@ for eta in etas:
 
         # Compute error over all examples, add this error to the end of error vector.
         # Compute output using current w on all data X.
-        y = sps.expit(np.dot(x_train, w))
+        y = sps.expit(np.dot(x_test, w))
 
         # e is the error, negative log-likelihood (Eqn 4.90)
         #         e = log_likelihood(y_train, w, x_train)
-        # e = log_likelihood(y_train, w, x_train,y)
+        # e = log_likelihood(y_test, w, x_test,y)
         e = log_loss(y_true=y_train, y_pred=y)
-        # e = - np.mean(np.multiply(y_train, np.log(y + 1E-08)) + np.multiply((1 - y_train), np.log(1 - y + 1E-08)))
+        # e = np.mean(- np.multiply(y_train, np.log(y + 1E-08)) - np.multiply((1 - y_train), np.log(1 - y + 1E-08)))
         #         e = -np.mean(np.multiply(y_train,np.log(y)) + np.multiply((1-y_train),np.log(1-y)))
         e_all.append(e)
 
@@ -141,8 +150,9 @@ for eta in etas:
                 break
 
     all_errors[eta] = e_all
-    print "Final Accuracy ==> ", calculate_accuracy(y_test, w, x_test)
-    del w
+    acc[eta] = calculate_accuracy(y_test, w, x_test)
+
+print "Final Accuracy ==> ",  acc
 
 # Plot error over iterations for all etas
 plt.figure(10)

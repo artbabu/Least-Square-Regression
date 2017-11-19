@@ -22,7 +22,7 @@ from keras import losses
 np.seterr(all='print')
 
 def load_dataset():
-    df = pd.read_csv("./Least-Square-Regression/Model_Trees_Full_Dataset/preprocessed_datasets.csv")
+    df = pd.read_csv("./Model_Trees_Full_Dataset/preprocessed_datasets.csv")
     drop_columns = [u'id', u'PlayerName',u'sum_7yr_TOI',u'DraftYear',u'Country',u'Overall', u'GP_greater_than_0']
     x_df = pd.get_dummies(df, prefix=['country_group', 'Position'], columns=['country_group', 'Position'])
     
@@ -56,8 +56,10 @@ def load_dataset():
 
 
 model = Sequential()
-model.add(Dense(units=100, input_dim=22, activation='relu'))
-model.add(Dense(units=100, activation='relu'))
+model.add(Dense(units=1000, input_dim=22, activation='relu'))
+model.add(Dropout(0.2))
+model.add(Dense(units=1000, activation='relu'))
+model.add(Dropout(0.2))
 model.add(Dense(units=1, activation='linear'))
 model.compile(loss=losses.MSE, optimizer=keras.optimizers.Adagrad(lr=0.1))
 history = model.fit(x_train, y_train,validation_data=(x_test,y_test), epochs=50, batch_size=10)
